@@ -1,0 +1,22 @@
+name: Coinflip
+version: ${project.version}
+main: org.legitzxdevelopment.coinflip.Coinflip
+authors: [LEGITZX]
+description: Coinflip plugin. 
+
+commands:
+  cf:
+    description: Display current coinflip games.
+    usage: /cf
+  cf create:
+    description: Create a coinflip game
+    usage: /cf create
+  cf cancel:
+    description: Cancel your coinflip game.
+    usage: /cf cancel
+  cf help:
+    description: Displays available coinflip commands.
+    usage: /cf help
+  cf reload:
+    description: Reloads Coinflip config.
+    usage: /cf reload

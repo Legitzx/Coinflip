@@ -1,0 +1,13 @@
+# Coinflip Config
+
+# MongoDB Connection Creds.
+uri: "mongodb+srv://hex:4x2GBPhA0p7KwwZa@legitzxdevelopment-fbwir.mongodb.net/odysseymc?retryWrites=true&w=majority"
+database: "odysseymc"
+collection: "coinflip"
+
+# Server name
+server.name: "OdysseyMC"
+
+# Minimum bet amount
+coinflip.min: 10000
+
