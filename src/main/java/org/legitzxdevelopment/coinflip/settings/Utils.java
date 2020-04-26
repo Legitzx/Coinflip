@@ -9,7 +9,7 @@ public class Utils {
     Coinflip plugin = Coinflip.getPlugin(Coinflip.class);
 
     public final String CONSOLE_PREFIX = "[Coinflip] ";
-    public final String INGAME_PREFIX = ChatColor.GOLD.BOLD + plugin.getConfig().getString("server.name") + ChatColor.DARK_GRAY.BOLD + " >> ";
+    public final String INGAME_PREFIX = ChatColor.BOLD.GOLD + plugin.getConfig().getString("server.name") + ChatColor.DARK_GRAY.BOLD + " >> ";
     public final String VERSION = "v0.1";
 
     public int getRandNum() {

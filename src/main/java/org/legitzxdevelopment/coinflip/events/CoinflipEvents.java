@@ -2,6 +2,7 @@ package org.legitzxdevelopment.coinflip.events;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -24,6 +25,17 @@ public class CoinflipEvents implements Listener {
             if(plugin.getCoinflipManager().isActive(check.getPlayer1())) {
                 event.getPlayer().openInventory(event.getInventory());
             }
+        }
+    }
+
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        try {
+            if (plugin.getCoinflipManager().isActive(event.getWhoClicked().getUniqueId().toString())) {
+                event.setCancelled(true);
+            }
+        } catch (NullPointerException e) {
+            return;
         }
     }
 
@@ -54,10 +66,5 @@ public class CoinflipEvents implements Listener {
             }
             return;
         }
-    }
-
-    @EventHandler
-    public void onMessageEvent(PlayerMoveEvent e) {
-        e.getPlayer().getServer().broadcastMessage(plugin.getCoinflipManager().getCoinflipGames().toString());
     }
 }

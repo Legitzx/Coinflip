@@ -1,5 +1,7 @@
 package org.legitzxdevelopment.coinflip.database;
 
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.lang.Nullable;
 import org.bson.Document;
@@ -7,6 +9,9 @@ import org.bson.conversions.Bson;
 import org.legitzxdevelopment.coinflip.Coinflip;
 import org.legitzxdevelopment.coinflip.coinflip.CoinflipConverter;
 import org.legitzxdevelopment.coinflip.coinflip.CoinflipGame;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DatabaseApi extends DatabaseConnection {
     // Plugin this class belongs to
@@ -73,5 +78,20 @@ public class DatabaseApi extends DatabaseConnection {
 
     public void deleteCoinflipGame(CoinflipGame coinflipGame) {
         collection.deleteOne(new Document("player1", coinflipGame.getPlayer1()));
+    }
+
+    public List<CoinflipGame> getAllCoinflips() {
+        List<CoinflipGame> coinflipGames = new ArrayList<>();
+
+        List<Document> documents = (List<Document>) collection.find().into(
+                new ArrayList<Document>());
+
+        for(Document document : documents){
+            coinflipGames.add(coinflipConverter.deserialize(document));
+
+            plugin.getServer().broadcastMessage(coinflipConverter.deserialize(document).getPlayer1());
+        }
+
+        return coinflipGames;
     }
 }

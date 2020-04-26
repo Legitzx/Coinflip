@@ -8,6 +8,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.legitzxdevelopment.coinflip.Coinflip;
 import org.legitzxdevelopment.coinflip.coinflip.CoinflipGame;
@@ -72,7 +73,7 @@ public class CoinflipCommands implements CommandExecutor {
 
 
                         if(args[0].equalsIgnoreCase("reload")) {
-
+                            player.getInventory().addItem(cacheHead(player.getName()));
                             player.sendMessage("reload");
                         }
 
@@ -82,6 +83,7 @@ public class CoinflipCommands implements CommandExecutor {
                     }
                 } else {
                     // TODO: Open cf inventory
+                    openMainCfGUI(player);
                     player.sendMessage("open inventory cf");
                 }
             }
@@ -165,6 +167,10 @@ public class CoinflipCommands implements CommandExecutor {
         Player player1 = Bukkit.getPlayer(UUID.fromString(game.getPlayer1()));
         Player player2 = Bukkit.getPlayer(UUID.fromString(game.getPlayer2()));
 
+        ItemStack player1Stack = cacheHead(player1.getName());
+        ItemStack player2Stack = cacheHead(player2.getName());
+
+
         new Countdown(3, plugin) {
             @Override
             public void count(int current) {
@@ -180,10 +186,118 @@ public class CoinflipCommands implements CommandExecutor {
                     countDownScreen1(player1);
                     countDownScreen1(player2);
                 } else if(current == 0) {
-                    activeGameGUI(player1, player2);
+                    spinCoinflip(player1, player2, game);
                 }
             }
         }.start();
+    }
+
+    public void spinCoinflip(Player player1, Player player2, CoinflipGame game) {
+        Random rand = new Random();
+        int randNum = rand.nextInt(3) + 1;
+
+        final boolean player1Wins;
+
+        if(randNum == 1) {
+            // player1 wins
+            player1Wins = true;
+        } else {
+            // player2 wins
+            player1Wins = false;
+        }
+
+        plugin.getServer().broadcastMessage("Player1wins: " + player1Wins);
+
+        new FastCountdown(40, plugin) {
+            @Override
+            public void count(int current) {
+                if(current % 2 == 0) {
+
+                    if(player1Wins) {
+                        // Display one player
+                        player1.getServer().broadcastMessage("player1: " + current);
+                        activeGameGUI(player1, player2, cacheHead(player1.getName()));
+                        if(current == 0) {
+                            rewardWinner(player1, player2, game);
+                        }
+                    } else {
+                        // Display other player
+                        player2.getServer().broadcastMessage("player2: " + current);
+                        activeGameGUI(player1, player2, cacheHead(player2.getName()));
+                        if(current == 0) {
+                            rewardWinner(player2, player1, game);
+                        }
+                    }
+
+                } else {
+
+                    if(player1Wins) {
+                        // Display other player
+                        player2.getServer().broadcastMessage("player2: " + current);
+                        activeGameGUI(player1, player2, cacheHead(player2.getName()));
+                        if(current == 0) {
+                            rewardWinner(player1, player2, game);
+                        }
+                    } else {
+                        // Display one player
+                        player1.getServer().broadcastMessage("player1: " + current);
+                        activeGameGUI(player1, player2, cacheHead(player1.getName()));
+                        if(current == 0) {
+                            rewardWinner(player2, player1, game);
+                        }
+                    }
+                }
+            }
+        }.start();
+    }
+
+    public void rewardWinner(Player winner, Player loser, CoinflipGame game) {
+        winner.getServer().broadcastMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + winner.getName() + ChatColor.YELLOW + " has defeated " + ChatColor.RED + loser.getName() + ChatColor.YELLOW + " in a $" + ChatColor.RED + game.getPrize() + ChatColor.YELLOW + " coinflip!");
+
+        // Waits 3 seconds, then deletes from database && closes game
+        new Countdown(3, plugin) {
+            @Override
+            public void count(int current) {
+                if(current == 0) {
+                    deleteFromDatabase(game);
+                    closeInventory(winner);
+                    closeInventory(loser);
+                }
+
+            }
+        }.start();
+
+        EconomyResponse economyResponse = plugin.getEcon().depositPlayer(winner, game.getPrize());
+
+        if(economyResponse.transactionSuccess()) {
+            return;
+        } else {
+            winner.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "There was a problem depositing $" + game.getPrize() + " into your account!");
+        }
+    }
+
+    public void closeInventory(Player player) {
+        player.closeInventory();
+    }
+
+    public void activeGameGUI(Player player1, Player player2, ItemStack playerSkull) {
+        int limit = 15;
+
+        Inventory inventory = Bukkit.createInventory(null, 45, "Coinflip");
+
+        // Players head
+        Random random = new Random();
+        for(int slot = 0; slot < inventory.getSize(); slot++) {
+            if(slot == 22) {
+                inventory.setItem(slot, playerSkull);
+                continue;
+            }
+            ItemStack itemStack = new ItemStack(Material.STAINED_GLASS_PANE, 1, ((byte) random.nextInt(limit + 1)));
+            inventory.setItem(slot, itemStack);
+        }
+
+        player1.openInventory(inventory);
+        player2.openInventory(inventory);
     }
 
 
@@ -271,45 +385,47 @@ public class CoinflipCommands implements CommandExecutor {
         player.openInventory(inventory);
     }
 
-    public void activeGameGUI(Player player1, Player player2) {
-        int limit = 15;
+    public ItemStack cacheHead(String player) {
+        ItemStack item = new ItemStack(Material.SKULL_ITEM, 1, (short) SkullType.PLAYER.ordinal());
+        SkullMeta meta = (SkullMeta) item.getItemMeta();
+        meta.setOwner(player);
+        item.setItemMeta(meta);
 
-        Inventory inventory = Bukkit.createInventory(null, 45, "Coinflip");
-
-        // Players head
-
-        Random random = new Random();
-        for(int slot = 0; slot < inventory.getSize(); slot++) {
-            if(slot == 22) {
-                if(random.nextInt(2) == 1) {
-                    inventory.setItem(slot, getHead(player1));
-                }
-                inventory.setItem(slot, getHead(player2));
-                continue;
-            }
-            ItemStack itemStack = new ItemStack(Material.STAINED_GLASS_PANE, 1, ((byte) random.nextInt(limit + 1)));
-            inventory.setItem(slot, itemStack);
-        }
-
-        player1.openInventory(inventory);
-        player2.openInventory(inventory);
+        return item;
     }
 
     public void openMainCfGUI(Player player) {
+        Inventory inventory = Bukkit.createInventory(player, 54, ChatColor.DARK_AQUA + " " + ChatColor.BOLD + "GAMES AVAILABLE");
 
+        // <-- BASE CF GUI -->
+        ItemStack glass = new ItemStack(Material.STAINED_GLASS_PANE, 1);
+
+        ItemStack echest = new ItemStack(Material.ENDER_CHEST, 1);
+        ItemMeta echestMeta = glass.getItemMeta();
+        echestMeta.setDisplayName(ChatColor.DARK_AQUA + "" + ChatColor.BOLD + "Coin Flip Help");
+        ArrayList<String> echestLore = new ArrayList<>();
+        echestLore.add("Want to make a Coin Flip?");
+        echestLore.add("Type " + ChatColor.YELLOW + "/cf create <bet>");
+        echestLore.add("");
+        echestLore.add("Need more help? Type " + ChatColor.YELLOW + "/cf help");
+        echestMeta.setLore(echestLore);
+        echest.setItemMeta(echestMeta);
+
+        inventory.setItem(45, glass);
+        inventory.setItem(46, glass);
+        inventory.setItem(47, glass);
+        inventory.setItem(48, glass);
+        inventory.setItem(49, echest);
+        inventory.setItem(50, glass);
+        inventory.setItem(51, glass);
+        inventory.setItem(52, glass);
+        inventory.setItem(53, glass);
+        // <!-- BASE CF GUI -->
+
+        player.openInventory(inventory);
     }
 
-    public ItemStack getHead(Player player){
-        ItemStack PlayerHead = new ItemStack(Material.SKULL_ITEM, 1, (short) 3);
 
-        SkullMeta meta = (SkullMeta) PlayerHead.getItemMeta();
-        meta.setOwner(player.getName());
-        meta.setDisplayName(player.getName());
-        ArrayList<String> l = new ArrayList<String>();
-        l.add(ChatColor.GREEN.toString() + "Du kan sælge Dette Head! /sellhead");
-        meta.setLore(l);
-        PlayerHead.setItemMeta(meta);
-
-        return PlayerHead;
-    }
 }
+
+// https://www.spigotmc.org/threads/loading-inventory-with-player-head-crash-the-server.348970/
