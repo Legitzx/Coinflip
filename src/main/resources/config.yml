@@ -8,6 +8,7 @@ collection: "coinflip"
 # Server name
 server.name: "OdysseyMC"
 
-# Minimum bet amount
+# Bet Limits
 coinflip.min: 10000
+coinflip.max: 1000000000
 

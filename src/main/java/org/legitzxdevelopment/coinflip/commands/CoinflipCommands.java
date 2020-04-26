@@ -9,12 +9,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
 import org.legitzxdevelopment.coinflip.Coinflip;
 import org.legitzxdevelopment.coinflip.coinflip.CoinflipGame;
 import org.legitzxdevelopment.coinflip.settings.Countdown;
 import org.legitzxdevelopment.coinflip.settings.FastCountdown;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
@@ -27,7 +27,7 @@ public class CoinflipCommands implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(command.getName().equalsIgnoreCase("cf")) {
+        if(command.getName().equalsIgnoreCase("cf") || command.getName().equalsIgnoreCase("coinflip")) {
             if(sender instanceof Player) {
                 Player player = (Player) sender;
 
@@ -36,16 +36,17 @@ public class CoinflipCommands implements CommandExecutor {
                         if(args[0].equalsIgnoreCase("create")) {
                             if(args.length >= 2) {
                                 if(args[1].matches("[0-9]+")) {
-                                    if(Long.parseLong(args[1]) >= plugin.getConfig().getInt("coinflip.min")) {
+                                    if(Long.parseLong(args[1]) >= plugin.getConfig().getInt("coinflip.min") && Long.parseLong(args[1]) <= plugin.getConfig().getInt("coinflip.max")) {
                                         createGame(player, Long.parseLong(args[1]));
                                     } else {
-                                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Minimum bet amount is $" + plugin.getConfig().getInt("coinflip.min") + "!");
+                                        DecimalFormat df = new DecimalFormat("#,###");
+                                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Minimum bet amount is $" + df.format(plugin.getConfig().getInt("coinflip.min")) + " and max bet amount is $" + df.format(plugin.getConfig().getInt("coinflip.max")) + "!");
                                     }
                                 } else {
-                                    player.sendMessage("create but false bcs only numbers");
+                                    player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Wrong arguments! Do /cf help.");
                                 }
                             } else {
-                                player.sendMessage("Missing args for create");
+                                player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Missing bet amount! Do /cf help");
                             }
                         }
 
@@ -59,7 +60,8 @@ public class CoinflipCommands implements CommandExecutor {
 
                                     if(response.transactionSuccess()) {
                                         deleteFromDatabase(coinflipGame);
-                                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Successfully canceled CF! Money has been refunded.");
+                                        DecimalFormat df = new DecimalFormat("#,###");
+                                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Successfully cancelled coinflip wager for $" + df.format(coinflipGame.getPrize() / 2));
                                     } else {
                                         player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "There was a problem removing you CF!");
                                     }
@@ -75,18 +77,20 @@ public class CoinflipCommands implements CommandExecutor {
 
 
                         if(args[0].equalsIgnoreCase("reload")) {
-                            player.getInventory().addItem(cacheHead(player.getName()));
-                            player.sendMessage("reload");
+                            if(player.hasPermission("coinflip.reload")) {
+                                plugin.reloadConfig();
+                                player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Reloaded!");
+                                return true;
+                            }
                         }
 
                         if(args[0].equalsIgnoreCase("help")) {
-                            player.sendMessage("help");
+                            sendUsages(player);
                         }
                     }
                 } else {
                     // Open cf inventory
                     openMainCfGUI(player);
-                    player.sendMessage("open inventory cf");
                 }
             }
             return true;
@@ -99,7 +103,7 @@ public class CoinflipCommands implements CommandExecutor {
         CoinflipGame check = plugin.getDatabaseApi().getCoinflipByUUID(player.getUniqueId().toString());
 
         if(check != null) {
-            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "You already have a CF up! Do /cf cancel to cancel your current game.");
+            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "You already have a Coinflip up! Do /cf cancel to cancel your current wager.");
             return;
         }
 
@@ -127,7 +131,7 @@ public class CoinflipCommands implements CommandExecutor {
                 coinflipGame.setPlayer2(player.getUniqueId().toString());
                 updateToDatabase(coinflipGame);
 
-                player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Game has started");
+                player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Coinflip wager has started!");
                 startGame(coinflipGame);
 
             } else { // Seems that someone has already taken this game - Deposit the betAmount back into the player and EXIT
@@ -146,7 +150,9 @@ public class CoinflipCommands implements CommandExecutor {
             CoinflipGame coinflipGame = new CoinflipGame(player.getUniqueId().toString(), null, betAmount * 2, System.currentTimeMillis());
             insertIntoDatabase(coinflipGame);
 
-            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Waiting for player to join");
+            DecimalFormat df = new DecimalFormat("#,###");
+            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "New coinflip proposal created for $" + df.format(betAmount));
+            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GRAY + "Use " + ChatColor.UNDERLINE + "/cf cancel" + ChatColor.RESET + ChatColor.GRAY + " to cancel your proposal");
         }
     }
 
@@ -174,27 +180,7 @@ public class CoinflipCommands implements CommandExecutor {
     public void startGame(CoinflipGame game) {
         Player player1 = Bukkit.getPlayer(UUID.fromString(game.getPlayer1()));
 
-//        try {
-//            if(plugin.getCoinflipManager().isPlayerInGUI(player1.getUniqueId().toString())) {
-//                plugin.getCoinflipManager().removePlayer(player1.getUniqueId().toString());
-//            }
-//        } catch (NullPointerException e) { }
-//
-//        player1.closeInventory();
-
         Player player2 = Bukkit.getPlayer(UUID.fromString(game.getPlayer2()));
-
-//        try {
-//            if(plugin.getCoinflipManager().isPlayerInGUI(player2.getUniqueId().toString())) {
-//                plugin.getCoinflipManager().removePlayer(player2.getUniqueId().toString());
-//            }
-//        } catch (NullPointerException e) { }
-//
-//        player2.closeInventory();
-
-        ItemStack player1Stack = cacheHead(player1.getName());
-        ItemStack player2Stack = cacheHead(player2.getName());
-
 
         new Countdown(3, plugin) {
             @Override
@@ -228,50 +214,111 @@ public class CoinflipCommands implements CommandExecutor {
             player1Wins = false;
         }
 
-        plugin.getServer().broadcastMessage("Player1wins: " + player1Wins);
+        try { // Player is online
+            ItemStack player1Head = plugin.getCoinflipManager().getHead(player1.getUniqueId().toString());
+            ItemMeta player1Meta = player1Head.getItemMeta();
+            player1Meta.setDisplayName(ChatColor.AQUA + "" + ChatColor.BOLD + "HEADS");
+            ArrayList<String> player1Lore = new ArrayList<>();
+            player1Lore.add(ChatColor.YELLOW + "" + ChatColor.YELLOW + "Player: " + ChatColor.WHITE + player1.getName());
+            player1Meta.setLore(player1Lore);
+            player1Head.setItemMeta(player1Meta);
 
-        new FastCountdown(40, plugin) {
-            @Override
-            public void count(int current) {
-                // TODO: ADD SOUNDS
-                if(current % 2 == 0) {
+            ItemStack player2Head = plugin.getCoinflipManager().getHead(player2.getUniqueId().toString());
+            ItemMeta player2Meta = player2Head.getItemMeta();
+            player2Meta.setDisplayName(ChatColor.YELLOW + "" + ChatColor.BOLD + "TAILS");
+            ArrayList<String> player2Lore = new ArrayList<>();
+            player2Lore.add(ChatColor.YELLOW + "" + ChatColor.YELLOW + "Player: " + ChatColor.WHITE + player2.getName());
+            player2Meta.setLore(player2Lore);
+            player2Head.setItemMeta(player2Meta);
 
-                    if(player1Wins) {
-                        // Display one player
-                        player1.getServer().broadcastMessage("player1: " + current);
-                        activeGameGUI(player1, player2, cacheHead(player1.getName()));
-                        if(current == 0) {
-                            rewardWinner(player1, player2, game);
+
+
+            new FastCountdown(40, plugin) {
+                @Override
+                public void count(int current) {
+                    player1.playSound(player1.getLocation(), Sound.LEVEL_UP, 100, 2);
+                    player2.playSound(player1.getLocation(), Sound.LEVEL_UP, 100, 2);
+                    if(current % 2 == 0) {
+
+                        if(player1Wins) {
+                            // Display one player
+                            //player1.getServer().broadcastMessage("player1: " + current);
+                            activeGameGUI(player1, player2, player1Head);
+                            if(current == 0) {
+                                rewardWinner(player1, player2, game);
+                            }
+                        } else {
+                            // Display other player
+                            //player2.getServer().broadcastMessage("player2: " + current);
+                            activeGameGUI(player1, player2, player2Head);
+                            if(current == 0) {
+                                rewardWinner(player2, player1, game);
+                            }
                         }
+
                     } else {
-                        // Display other player
-                        player2.getServer().broadcastMessage("player2: " + current);
-                        activeGameGUI(player1, player2, cacheHead(player2.getName()));
-                        if(current == 0) {
-                            rewardWinner(player2, player1, game);
-                        }
-                    }
 
-                } else {
-
-                    if(player1Wins) {
-                        // Display other player
-                        player2.getServer().broadcastMessage("player2: " + current);
-                        activeGameGUI(player1, player2, cacheHead(player2.getName()));
-                        if(current == 0) {
-                            rewardWinner(player1, player2, game);
-                        }
-                    } else {
-                        // Display one player
-                        player1.getServer().broadcastMessage("player1: " + current);
-                        activeGameGUI(player1, player2, cacheHead(player1.getName()));
-                        if(current == 0) {
-                            rewardWinner(player2, player1, game);
+                        if(player1Wins) {
+                            // Display other player
+                            //player2.getServer().broadcastMessage("player2: " + current);
+                            activeGameGUI(player1, player2, player2Head);
+                            if(current == 0) {
+                                rewardWinner(player1, player2, game);
+                            }
+                        } else {
+                            // Display one player
+                            //player1.getServer().broadcastMessage("player1: " + current);
+                            activeGameGUI(player1, player2, player1Head);
+                            if(current == 0) {
+                                rewardWinner(player2, player1, game);
+                            }
                         }
                     }
                 }
-            }
-        }.start();
+            }.start();
+        } catch (NullPointerException e) { // Player is offline
+            new FastCountdown(40, plugin) {
+                @Override
+                public void count(int current) {
+                    if(current % 2 == 0) {
+
+                        if(player1Wins) {
+                            // Display one player
+                            //player1.getServer().broadcastMessage("player1: " + current);
+                            activeGameGUI(player1, player2, plugin.getCoinflipManager().getHead(player1.getUniqueId().toString()));
+                            if(current == 0) {
+                                rewardWinner(player1, player2, game);
+                            }
+                        } else {
+                            // Display other player
+                            //player2.getServer().broadcastMessage("player2: " + current);
+                            activeGameGUI(player1, player2, plugin.getCoinflipManager().getHead(player2.getUniqueId().toString()));
+                            if(current == 0) {
+                                rewardWinner(player2, player1, game);
+                            }
+                        }
+
+                    } else {
+
+                        if(player1Wins) {
+                            // Display other player
+                            //player2.getServer().broadcastMessage("player2: " + current);
+                            activeGameGUI(player1, player2, plugin.getCoinflipManager().getHead(player2.getUniqueId().toString()));
+                            if(current == 0) {
+                                rewardWinner(player1, player2, game);
+                            }
+                        } else {
+                            // Display one player
+                            //player1.getServer().broadcastMessage("player1: " + current);
+                            activeGameGUI(player1, player2, plugin.getCoinflipManager().getHead(player1.getUniqueId().toString()));
+                            if(current == 0) {
+                                rewardWinner(player2, player1, game);
+                            }
+                        }
+                    }
+                }
+            }.start();
+        }
     }
 
     public int getRandNum() {
@@ -280,7 +327,8 @@ public class CoinflipCommands implements CommandExecutor {
     }
 
     public void rewardWinner(Player winner, Player loser, CoinflipGame game) {
-        winner.getServer().broadcastMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + winner.getName() + ChatColor.YELLOW + " has defeated " + ChatColor.RED + loser.getName() + ChatColor.YELLOW + " in a $" + ChatColor.RED + game.getPrize() + ChatColor.YELLOW + " coinflip!");
+        DecimalFormat df = new DecimalFormat("#,###");
+        winner.getServer().broadcastMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + winner.getName() + ChatColor.YELLOW + " has defeated " + ChatColor.RED + loser.getName() + ChatColor.YELLOW + " in a $" + ChatColor.RED + df.format(game.getPrize()) + ChatColor.YELLOW + " coinflip!");
 
         // Waits 3 seconds, then deletes from database && closes game
         new Countdown(3, plugin) {
@@ -311,7 +359,7 @@ public class CoinflipCommands implements CommandExecutor {
     public void activeGameGUI(Player player1, Player player2, ItemStack playerSkull) {
         int limit = 15;
 
-        Inventory inventory = Bukkit.createInventory(null, 45, "Coinflip");
+        Inventory inventory = Bukkit.createInventory(null, 45, ChatColor.DARK_AQUA + "" + ChatColor.BOLD + plugin.getConfig().getString("server.name"));
 
         // Players head
         Random random = new Random();
@@ -330,7 +378,7 @@ public class CoinflipCommands implements CommandExecutor {
 
 
     public void countDownScreen3(Player player) {
-        Inventory inventory = Bukkit.createInventory(player, 45, "Coinflip");
+        Inventory inventory = Bukkit.createInventory(player, 45, ChatColor.DARK_AQUA + "" + ChatColor.BOLD + plugin.getConfig().getString("server.name"));
 
         ItemStack main = new ItemStack(Material.STAINED_GLASS_PANE, 1, (byte) 14);
         ItemStack fill = new ItemStack(Material.STAINED_GLASS_PANE, 1);
@@ -358,7 +406,7 @@ public class CoinflipCommands implements CommandExecutor {
     }
 
     public void countDownScreen2(Player player) {
-        Inventory inventory = Bukkit.createInventory(player, 45, "Coinflip");
+        Inventory inventory = Bukkit.createInventory(player, 45, ChatColor.DARK_AQUA + "" + ChatColor.BOLD + plugin.getConfig().getString("server.name"));
 
         ItemStack main = new ItemStack(Material.STAINED_GLASS_PANE, 1, (byte) 1);
         ItemStack fill = new ItemStack(Material.STAINED_GLASS_PANE, 1);
@@ -386,7 +434,7 @@ public class CoinflipCommands implements CommandExecutor {
     }
 
     public void countDownScreen1(Player player) {
-        Inventory inventory = Bukkit.createInventory(player, 45, "Coinflip");
+        Inventory inventory = Bukkit.createInventory(player, 45, ChatColor.DARK_AQUA + "" + ChatColor.BOLD + plugin.getConfig().getString("server.name"));
 
         ItemStack main = new ItemStack(Material.STAINED_GLASS_PANE, 1, (byte) 14);
         ItemStack fill = new ItemStack(Material.STAINED_GLASS_PANE, 1);
@@ -413,29 +461,30 @@ public class CoinflipCommands implements CommandExecutor {
         player.openInventory(inventory);
     }
 
-    public ItemStack cacheHead(String player) {
-        ItemStack item = new ItemStack(Material.SKULL_ITEM, 1, (short) SkullType.PLAYER.ordinal());
-        SkullMeta meta = (SkullMeta) item.getItemMeta();
-        meta.setOwner(player);
-        item.setItemMeta(meta);
-
-        return item;
-    }
-
     public void openMainCfGUI(Player player) {
         Inventory inventory = Bukkit.createInventory(player, 54, ChatColor.DARK_AQUA + " " + ChatColor.BOLD + "GAMES AVAILABLE");
+
+        DecimalFormat df = new DecimalFormat("#,###");
 
         // <-- BASE CF GUI -->
         ItemStack glass = new ItemStack(Material.STAINED_GLASS_PANE, 1);
 
         ItemStack echest = new ItemStack(Material.ENDER_CHEST, 1);
-        ItemMeta echestMeta = glass.getItemMeta();
-        echestMeta.setDisplayName(ChatColor.DARK_AQUA + "" + ChatColor.BOLD + "Coin Flip Help");
+        ItemMeta echestMeta = echest.getItemMeta();
+        echestMeta.setDisplayName(ChatColor.GOLD + "" + ChatColor.BOLD + "Information");
         ArrayList<String> echestLore = new ArrayList<>();
-        echestLore.add("Want to make a Coin Flip?");
-        echestLore.add("Type " + ChatColor.YELLOW + "/cf create <bet>");
+        echestLore.add(ChatColor.WHITE + "Click on someone's head to accept");
+        echestLore.add(ChatColor.WHITE + "their" + ChatColor.GREEN + " wager " + ChatColor.WHITE + "and challenge them");
+        echestLore.add(ChatColor.WHITE +"to a" + ChatColor.GREEN + " 50/50 " + ChatColor.WHITE + "coin toss - afterwards");
+        echestLore.add(ChatColor.WHITE + "the" + ChatColor.GREEN + " winner takes all " + ChatColor.WHITE + "(both bets combined)");
         echestLore.add("");
-        echestLore.add("Need more help? Type " + ChatColor.YELLOW + "/cf help");
+        echestLore.add(ChatColor.WHITE + "Start a" + ChatColor.GREEN + " new wager " + ChatColor.WHITE + "of your own");
+        echestLore.add(ChatColor.WHITE + "with" + ChatColor.GOLD + " /cf create <bet amount> " + ChatColor.WHITE + "where");
+        echestLore.add(ChatColor.WHITE + "the bet amount is between " + ChatColor.GREEN + "$" + df.format(plugin.getConfig().getInt("coinflip.min")));
+        echestLore.add(ChatColor.WHITE + "and " + ChatColor.GREEN + "$" + df.format(plugin.getConfig().getInt("coinflip.max")));
+        echestLore.add("");
+        echestLore.add(ChatColor.WHITE + "You can" + ChatColor.GREEN + " cancel an existing Coinflip");
+        echestLore.add(ChatColor.WHITE + "proposal with" + ChatColor.GOLD + " /cf cancel");
         echestMeta.setLore(echestLore);
         echest.setItemMeta(echestMeta);
 
@@ -451,6 +500,10 @@ public class CoinflipCommands implements CommandExecutor {
         // <!-- BASE CF GUI -->
         plugin.getCoinflipManager().updateMainCfGUI(player, inventory);
         //player.openInventory(inventory);
+    }
+
+    public void sendUsages(Player player) {
+
     }
 
 

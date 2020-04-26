@@ -8,7 +8,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.legitzxdevelopment.coinflip.Coinflip;
 import org.legitzxdevelopment.coinflip.coinflip.CoinflipGame;
@@ -34,7 +33,7 @@ public class CoinflipEvents implements Listener {
         if(!plugin.getCoinflipManager().refreshing) {
             if(plugin.getCoinflipManager().isPlayerInGUI(event.getPlayer().getUniqueId().toString())) {
                 plugin.getCoinflipManager().removePlayer(event.getPlayer().getUniqueId().toString());
-                plugin.getServer().broadcastMessage("CLOSE");
+                //plugin.getServer().broadcastMessage("CLOSE");
             }
         }
     }
@@ -99,13 +98,11 @@ public class CoinflipEvents implements Listener {
 
                     // Double checking to make sure nobody has taken this game before this player has
                     if(check.getPlayer2() == null) {
-                        plugin.getServer().broadcastMessage("4");
                         // Nobody has taken the game -> proceed
                         check.setPlayer2(player.getUniqueId().toString());
                         plugin.getCoinflipCommands().updateToDatabase(check);
 
                         player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Game has started");
-                        plugin.getServer().broadcastMessage("3");
                         plugin.getCoinflipCommands().startGame(check);
 
                     } else { // Seems that someone has already taken this game - Deposit the betAmount back into the player and EXIT
@@ -135,10 +132,17 @@ public class CoinflipEvents implements Listener {
             plugin.getCoinflipManager().addToList(check.getPlayer1(), false);
             return;
         }
+
+        // head caching
+        plugin.getCoinflipManager().cacheHead(event.getPlayer().getUniqueId().toString());
     }
 
     @EventHandler
     public void onPlayerLeave(PlayerQuitEvent event) {
+        if(plugin.getCoinflipManager().getHead(event.getPlayer().getUniqueId().toString()) != null) {
+            plugin.getCoinflipManager().removeHead(event.getPlayer().getUniqueId().toString());
+        }
+
         // Check if player has any CF's, if so, remove them from queue(only if inactive)
         CoinflipGame check = plugin.getDatabaseApi().getCoinflipByUUID(event.getPlayer().getUniqueId().toString());
 
@@ -166,9 +170,9 @@ public class CoinflipEvents implements Listener {
         }
     }
 
-    @EventHandler
-    public void movement(PlayerMoveEvent event) {
-        event.getPlayer().getServer().broadcastMessage("CF: " + plugin.getCoinflipManager().getCoinflipGames());
-        event.getPlayer().getServer().broadcastMessage("PLAYERS: " + plugin.getCoinflipManager().getPlayersInCfGUI());
-    }
+//    @EventHandler
+//    public void movement(PlayerMoveEvent event) {
+//        event.getPlayer().getServer().broadcastMessage("CF: " + plugin.getCoinflipManager().getCoinflipGames());
+//        event.getPlayer().getServer().broadcastMessage("PLAYERS: " + plugin.getCoinflipManager().getPlayersInCfGUI());
+//    }
 }

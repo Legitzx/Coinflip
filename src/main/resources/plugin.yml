@@ -20,3 +20,20 @@ commands:
   cf reload:
     description: Reloads Coinflip config.
     usage: /cf reload
+    permission: coinflip.reload
+  coinflip:
+    description: Display current coinflip games.
+    usage: /cf
+  coinflip create:
+    description: Create a coinflip game
+    usage: /cf create
+  coinflip cancel:
+    description: Cancel your coinflip game.
+    usage: /cf cancel
+  coinflip help:
+    description: Displays available coinflip commands.
+    usage: /cf help
+  coinflip reload:
+    description: Reloads Coinflip config.
+    usage: /cf reload
+    permission: coinflip.reload

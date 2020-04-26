@@ -65,6 +65,7 @@ public final class Coinflip extends JavaPlugin {
 
         // Commands
         this.getCommand("cf").setExecutor(new CoinflipCommands());
+        this.getCommand("coinflip").setExecutor(new CoinflipCommands());
 
         // Refund old coinflips
         refundCooldown();

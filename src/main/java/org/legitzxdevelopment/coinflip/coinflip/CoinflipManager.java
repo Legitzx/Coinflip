@@ -1,5 +1,11 @@
 package org.legitzxdevelopment.coinflip.coinflip;
 
+import com.google.common.base.Enums;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -11,15 +17,23 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.legitzxdevelopment.coinflip.Coinflip;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public class CoinflipManager {
     private Coinflip plugin;
     private HashMap<String, Boolean> coinflipGameList;
     private HashMap<String, Inventory> playersInCfGUI; // CF Inventory
+    private Map<String, ItemStack> heads = new HashMap<>(); // Head Caching
 
     public boolean refreshing; // WHILE THE COINFLIPS ARE REFRESHING, NOTHING CAN GET REMOVED -> ConcurrentModificationException FIX
 
@@ -96,7 +110,6 @@ public class CoinflipManager {
     }
 
     public void refreshInventory() {
-        plugin.getServer().broadcastMessage(playersInCfGUI.keySet().toString());
         refreshing = true;
         for(String uuid : playersInCfGUI.keySet()) {
             Player player = Bukkit.getPlayer(UUID.fromString(uuid));
@@ -144,7 +157,7 @@ public class CoinflipManager {
                     String playerName = Bukkit.getPlayer(UUID.fromString(uuid)).getName();
                     CoinflipGame game = plugin.getDatabaseApi().getCoinflipByUUID(uuid);
 
-                    ItemStack head = cacheHead(playerName);
+                    ItemStack head = heads.get(uuid);
                     ItemMeta meta = head.getItemMeta();
                     meta.setDisplayName(ChatColor.GOLD + "" + ChatColor.BOLD + playerName + "'s Game");
                     ArrayList<String> lore = new ArrayList<>();
@@ -166,12 +179,62 @@ public class CoinflipManager {
         refreshing = false;
     }
 
-    public ItemStack cacheHead(String player) {
-        ItemStack item = new ItemStack(Material.SKULL_ITEM, 1, (short) SkullType.PLAYER.ordinal());
+    public void cacheHead(String uuid) {
+        ItemStack item = new ItemStack(Material.SKULL_ITEM, 1, (short) 3);
         SkullMeta meta = (SkullMeta) item.getItemMeta();
-        meta.setOwner(player);
-        item.setItemMeta(meta);
+        setTexture(item, meta, uuid);
+        heads.put(uuid, item);
+    }
 
-        return item;
+    private void setTexture(ItemStack item, SkullMeta meta, final String u) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+            @Override
+            public void run() {
+                String texture;
+                String signature;
+                String uuid;
+                uuid = StringUtils.replace(u, "-", "");
+                URL url = null;
+
+                try {
+                    url = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid +
+                            "?unsigned=false");
+                } catch (MalformedURLException e) {
+                    //ukkit.getServer().getLogger().log(Level.SEVERE, Enums.URL_EXCEPTION.getString(), e);
+                }
+
+                try {
+                    InputStreamReader reader = new InputStreamReader(url.openStream());
+                    JsonObject json = new JsonParser().parse(reader).getAsJsonObject().get("properties")
+                            .getAsJsonArray().get(0).getAsJsonObject();
+                    texture = json.get("value").getAsString();
+                    signature = json.get("signature").getAsString();
+                } catch (IOException e) {
+                    return;
+                }
+
+                GameProfile profile = new GameProfile(UUID.randomUUID(), null);
+                profile.getProperties().put("textures", new Property("textures", texture, signature));
+                Field field;
+                try {
+                    field = meta.getClass().getDeclaredField("profile");
+                    field.setAccessible(true);
+                    field.set(meta, profile);
+                    item.setItemMeta(meta);
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    Bukkit.getServer().getLogger().log(Level.SEVERE, "Please report this to the developer", e);
+                }
+            }
+        });
+    }
+
+    public ItemStack getHead(String uuid) {
+        return heads.get(uuid);
+    }
+
+    public void removeHead(String uuid) {
+        if(heads.containsKey(uuid)) {
+            heads.remove(uuid);
+        }
     }
 }
