@@ -25,6 +25,7 @@ public final class Coinflip extends JavaPlugin {
 
     // Managers
     CoinflipManager coinflipManager;
+    CoinflipCommands commands;
 
     // Utils
     Utils utils;
@@ -76,7 +77,6 @@ public final class Coinflip extends JavaPlugin {
     public void onDisable() {
         // Plugin shutdown logic
 
-        // TODO: Cancel ALL active games - umm idk
         // When server disables, clean up hashmap
         this.getCoinflipManager().cleanUp();
     }
@@ -85,6 +85,7 @@ public final class Coinflip extends JavaPlugin {
         coinflipManager = new CoinflipManager(this);
         utils = new Utils();
         coinflipConverter = new CoinflipConverter();
+        commands = new CoinflipCommands();
     }
 
     // <-- VaultAPI -->
@@ -115,18 +116,22 @@ public final class Coinflip extends JavaPlugin {
             this.getDatabaseApi().deleteCoinflipGame(game);
 
             EconomyResponse economyResponse1 = this.getEcon().depositPlayer(Bukkit.getOfflinePlayer(UUID.fromString(game.getPlayer1())), game.getPrize() / 2);
-            EconomyResponse economyResponse2 = this.getEcon().depositPlayer(Bukkit.getOfflinePlayer(UUID.fromString(game.getPlayer2())), game.getPrize() / 2);
 
             if(economyResponse1.transactionSuccess()) {
-                getServer().getConsoleSender().sendMessage(utils.INGAME_PREFIX + ChatColor.GREEN +  "Added " + game.getPrize() / 2 + " to " + game.getPlayer1() + " since he was in an active CF when the server restarted!");
+                getServer().getConsoleSender().sendMessage(utils.CONSOLE_PREFIX + ChatColor.GREEN +  "Added $" + game.getPrize() / 2 + " to " + game.getPlayer1() + " since he was in an active CF when the server restarted!");
             } else {
-                getServer().getConsoleSender().sendMessage(utils.INGAME_PREFIX + ChatColor.RED + "There was an issue adding " + game.getPrize() / 2 + " to " + game.getPlayer1() + "!");
+                getServer().getConsoleSender().sendMessage(utils.CONSOLE_PREFIX + ChatColor.RED + "There was an issue adding " + game.getPrize() / 2 + " to " + game.getPlayer1() + "!");
             }
 
-            if(economyResponse2.transactionSuccess()) {
-                getServer().getConsoleSender().sendMessage(utils.INGAME_PREFIX + ChatColor.GREEN +  "Added " + game.getPrize() / 2 + " to " + game.getPlayer2() + " since he was in an active CF when the server restarted!");
-            } else {
-                getServer().getConsoleSender().sendMessage(utils.INGAME_PREFIX + ChatColor.RED + "There was an issue adding " + game.getPrize() / 2 + " to " + game.getPlayer2() + "!");
+            try {
+                EconomyResponse economyResponse2 = this.getEcon().depositPlayer(Bukkit.getOfflinePlayer(UUID.fromString(game.getPlayer2())), game.getPrize() / 2);
+                if (economyResponse2.transactionSuccess()) {
+                    getServer().getConsoleSender().sendMessage(utils.CONSOLE_PREFIX + ChatColor.GREEN + "Added $" + game.getPrize() / 2 + " to " + game.getPlayer2() + " since he was in an active CF when the server restarted!");
+                } else {
+                    getServer().getConsoleSender().sendMessage(utils.CONSOLE_PREFIX + ChatColor.RED + "There was an issue adding " + game.getPrize() / 2 + " to " + game.getPlayer2() + "!");
+                }
+            } catch(NullPointerException e) {
+                return;
             }
         }
     }
@@ -149,5 +154,9 @@ public final class Coinflip extends JavaPlugin {
 
     public CoinflipManager getCoinflipManager() {
         return coinflipManager;
+    }
+
+    public CoinflipCommands getCoinflipCommands() {
+        return commands;
     }
 }

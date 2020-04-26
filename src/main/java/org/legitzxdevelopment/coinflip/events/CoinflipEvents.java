@@ -1,5 +1,8 @@
 package org.legitzxdevelopment.coinflip.events;
 
+import net.milkbowl.vault.economy.EconomyResponse;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -26,24 +29,105 @@ public class CoinflipEvents implements Listener {
                 event.getPlayer().openInventory(event.getInventory());
             }
         }
+
+        // Check if player is in the cf menu, if they are and if they exit we can remove them
+        if(plugin.getCoinflipManager().isPlayerInGUI(event.getPlayer().getUniqueId().toString())) {
+            plugin.getCoinflipManager().removePlayer(event.getPlayer().getUniqueId().toString());
+            plugin.getServer().broadcastMessage("CLOSE");
+        }
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
+        Player player = (Player) event.getWhoClicked();
+
+        if (plugin.getCoinflipManager().isActive(event.getWhoClicked().getUniqueId().toString())) {
+            event.setCancelled(true);
+        }
+
         try {
-            if (plugin.getCoinflipManager().isActive(event.getWhoClicked().getUniqueId().toString())) {
+            if(plugin.getCoinflipManager().isPlayerInGUI(event.getWhoClicked().getUniqueId().toString())) {
                 event.setCancelled(true);
             }
-        } catch (NullPointerException e) {
-            return;
-        }
+        } catch (NullPointerException e) { }
+
+        try {
+            if(plugin.getCoinflipManager().isPlayerInGUI(event.getWhoClicked().getUniqueId().toString())) {
+                if(event.getSlot() >= 0 && event.getSlot() <= 54) {
+                    // Gets prize from item meta
+                    String v = event.getClickedInventory().getItem(event.getSlot()).getItemMeta().getLore().get(0);
+                    String[] args = v.split(" ");
+
+                    // Removes all random shit
+                    String v1 = args[1].replaceAll("[^\\d.]", "");
+
+                    // Removes $ and ,
+                    long betAmount = Long.parseLong(v1.replaceAll("[$,]", ""));
+
+
+
+                    // Gets game from prize
+                    CoinflipGame check;
+                    try {
+                        check = plugin.getDatabaseApi().getCoinflipGameByPrize(betAmount * 2);
+                    } catch (Exception e) { e.printStackTrace(); event.setCancelled(true); return;}
+
+                    CoinflipGame check1 = plugin.getDatabaseApi().getCoinflipByUUID(player.getUniqueId().toString());
+
+                    if(check1 != null) {
+                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "You already have a CF up! Do /cf cancel to cancel your current game.");
+                        event.setCancelled(true);
+                        return;
+                    }
+
+                    // Check if player has enough money - if so it will withdraw
+                    if(plugin.getEcon().has(player, betAmount)) {
+                        EconomyResponse response = plugin.getEcon().withdrawPlayer(player, betAmount);
+
+                        if(!response.transactionSuccess()) {
+                            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Failed to withdraw money!");
+                            event.setCancelled(true);
+                            return;
+                        }
+                    } else {
+                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "You do not have enough money!");
+                        event.setCancelled(true);
+                        return;
+                    }
+
+                    // Double checking to make sure nobody has taken this game before this player has
+                    if(check.getPlayer2() == null) {
+                        plugin.getServer().broadcastMessage("4");
+                        // Nobody has taken the game -> proceed
+                        check.setPlayer2(player.getUniqueId().toString());
+                        plugin.getCoinflipCommands().updateToDatabase(check);
+
+                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Game has started");
+                        plugin.getServer().broadcastMessage("3");
+                        plugin.getCoinflipCommands().startGame(check);
+
+                    } else { // Seems that someone has already taken this game - Deposit the betAmount back into the player and EXIT
+                        EconomyResponse response = plugin.getEcon().depositPlayer(player, betAmount);
+
+                        if(response.transactionSuccess()) {
+                            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Coinflip game was taken! $" + betAmount + " was deposited back into your account!");
+                        } else {
+                            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Coinflip game was taken [ERROR] Failed to deposit $" + betAmount + " back into your account! Contact an admin immediately.");
+                        }
+                        event.setCancelled(true);
+                        return;
+                    }
+                    event.setCancelled(true);
+                }
+            }
+        } catch (Exception e) {  }
+
     }
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         // Check if player has active CF's, if so add them to the queue
         CoinflipGame check = plugin.getDatabaseApi().getCoinflipByUUID(event.getPlayer().getUniqueId().toString());
-        // TODO: REMOVE SECOND PLAYER FROM GAME
         if(check != null) {
             // has CF
             plugin.getCoinflipManager().addToList(check.getPlayer1(), false);
@@ -62,9 +146,27 @@ public class CoinflipEvents implements Listener {
                 // Well its active so let it play out
             } else {
                 // Its not active, lets remove it from the queue
-                plugin.getCoinflipManager().removeFromList(check.getPlayer1());
+                plugin.getCoinflipCommands().deleteFromDatabase(check);
+                EconomyResponse response = plugin.getEcon().depositPlayer(event.getPlayer(), check.getPrize() / 2);
+
+                if(response.transactionSuccess()) {
+                    // COOL!
+                } else {
+                    plugin.getServer().getConsoleSender().sendMessage(plugin.getUtils().CONSOLE_PREFIX + ChatColor.RED + "Unable to deposit $" + check.getPrize() / 2 + " to " + check.getPlayer1());
+                }
             }
             return;
         }
+
+        // Delete cf gui record from database
+        if(plugin.getCoinflipManager().isPlayerInGUI(event.getPlayer().getUniqueId().toString())) {
+            plugin.getCoinflipManager().removePlayer(event.getPlayer().getUniqueId().toString());
+        }
+    }
+
+    @EventHandler
+    public void movement(PlayerMoveEvent event) {
+        event.getPlayer().getServer().broadcastMessage("CF: " + plugin.getCoinflipManager().getCoinflipGames());
+        event.getPlayer().getServer().broadcastMessage("PLAYERS: " + plugin.getCoinflipManager().getPlayersInCfGUI());
     }
 }

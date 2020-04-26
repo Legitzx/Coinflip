@@ -23,6 +23,8 @@ public class CoinflipCommands implements CommandExecutor {
     // Plugin this class belongs to
     Coinflip plugin = Coinflip.getPlugin(Coinflip.class);
 
+    // TODO: ADD COOLDOWNS TO COMMANDS, ALSO ADD COOLDOWNS FOR CLICKINVENTORYEVENT
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(command.getName().equalsIgnoreCase("cf")) {
@@ -82,7 +84,7 @@ public class CoinflipCommands implements CommandExecutor {
                         }
                     }
                 } else {
-                    // TODO: Open cf inventory
+                    // Open cf inventory
                     openMainCfGUI(player);
                     player.sendMessage("open inventory cf");
                 }
@@ -138,7 +140,7 @@ public class CoinflipCommands implements CommandExecutor {
                 }
                 return;
             }
-            coinflipGame.setPlayer2(player.getUniqueId().toString());
+            // coinflipGame.setPlayer2(player.getUniqueId().toString());
         } else {
             // Game does not exist - create one - wait for someone else to join
             CoinflipGame coinflipGame = new CoinflipGame(player.getUniqueId().toString(), null, betAmount * 2, System.currentTimeMillis());
@@ -151,21 +153,44 @@ public class CoinflipCommands implements CommandExecutor {
     public void insertIntoDatabase(CoinflipGame coinflipGame) {
         plugin.getDatabaseApi().insertCoinflipGame(coinflipGame); // Remotely
         plugin.getCoinflipManager().addToList(coinflipGame.getPlayer1(), false); // Locally
+
+        plugin.getCoinflipManager().refreshInventory();
     }
 
     public void updateToDatabase(CoinflipGame coinflipGame) {
         plugin.getDatabaseApi().updateCoinflipGame(coinflipGame);
         plugin.getCoinflipManager().updateList(coinflipGame.getPlayer1(), true);
+
+        //plugin.getCoinflipManager().refreshInventory();
     }
 
     public void deleteFromDatabase(CoinflipGame coinflipGame) {
         plugin.getDatabaseApi().deleteCoinflipGame(coinflipGame);
         plugin.getCoinflipManager().removeFromList(coinflipGame.getPlayer1());
+
+        plugin.getCoinflipManager().refreshInventory();
     }
 
     public void startGame(CoinflipGame game) {
         Player player1 = Bukkit.getPlayer(UUID.fromString(game.getPlayer1()));
+
+//        try {
+//            if(plugin.getCoinflipManager().isPlayerInGUI(player1.getUniqueId().toString())) {
+//                plugin.getCoinflipManager().removePlayer(player1.getUniqueId().toString());
+//            }
+//        } catch (NullPointerException e) { }
+//
+//        player1.closeInventory();
+
         Player player2 = Bukkit.getPlayer(UUID.fromString(game.getPlayer2()));
+
+//        try {
+//            if(plugin.getCoinflipManager().isPlayerInGUI(player2.getUniqueId().toString())) {
+//                plugin.getCoinflipManager().removePlayer(player2.getUniqueId().toString());
+//            }
+//        } catch (NullPointerException e) { }
+//
+//        player2.closeInventory();
 
         ItemStack player1Stack = cacheHead(player1.getName());
         ItemStack player2Stack = cacheHead(player2.getName());
@@ -174,8 +199,8 @@ public class CoinflipCommands implements CommandExecutor {
         new Countdown(3, plugin) {
             @Override
             public void count(int current) {
-                player1.playSound(player1.getLocation(), Sound.NOTE_BASS, 40, 1);
-                player2.playSound(player2.getLocation(), Sound.NOTE_BASS, 40, 1);
+                player1.playSound(player1.getLocation(), Sound.NOTE_BASS, 50, 1);
+                player2.playSound(player2.getLocation(), Sound.NOTE_BASS, 50, 1);
                 if(current == 3) {
                     countDownScreen3(player1);
                     countDownScreen3(player2);
@@ -193,12 +218,9 @@ public class CoinflipCommands implements CommandExecutor {
     }
 
     public void spinCoinflip(Player player1, Player player2, CoinflipGame game) {
-        Random rand = new Random();
-        int randNum = rand.nextInt(3) + 1;
-
         final boolean player1Wins;
 
-        if(randNum == 1) {
+        if(getRandNum() == 1) {
             // player1 wins
             player1Wins = true;
         } else {
@@ -211,6 +233,7 @@ public class CoinflipCommands implements CommandExecutor {
         new FastCountdown(40, plugin) {
             @Override
             public void count(int current) {
+                // TODO: ADD SOUNDS
                 if(current % 2 == 0) {
 
                     if(player1Wins) {
@@ -249,6 +272,11 @@ public class CoinflipCommands implements CommandExecutor {
                 }
             }
         }.start();
+    }
+
+    public int getRandNum() {
+        Random random = new Random();
+        return random.nextInt(2);
     }
 
     public void rewardWinner(Player winner, Player loser, CoinflipGame game) {
@@ -421,8 +449,8 @@ public class CoinflipCommands implements CommandExecutor {
         inventory.setItem(52, glass);
         inventory.setItem(53, glass);
         // <!-- BASE CF GUI -->
-
-        player.openInventory(inventory);
+        plugin.getCoinflipManager().updateMainCfGUI(player, inventory);
+        //player.openInventory(inventory);
     }
 
 

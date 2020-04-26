@@ -63,6 +63,16 @@ public class DatabaseApi extends DatabaseConnection {
         }
     }
 
+    public CoinflipGame getCoinflipBySecondUUID(String uuid) {
+        try {
+            Document found = (Document) collection.find(new Document("player2", uuid)).first();
+
+            return coinflipConverter.deserialize(found);
+        } catch (NullPointerException e) {
+            return null;
+        }
+    }
+
     public void insertCoinflipGame(CoinflipGame coinflipGame) {
         collection.insertOne(coinflipConverter.serialize(coinflipGame));
     }
