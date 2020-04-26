@@ -80,6 +80,7 @@ public class CoinflipManager {
         // Cleans up memory by wiping lists
         coinflipGameList.clear();
         playersInCfGUI.clear();
+        heads.clear();
     }
 
     // CF Inventory stuff

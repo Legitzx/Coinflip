@@ -11,6 +11,7 @@ import org.legitzxdevelopment.coinflip.coinflip.CoinflipConverter;
 import org.legitzxdevelopment.coinflip.coinflip.CoinflipGame;
 import org.legitzxdevelopment.coinflip.coinflip.CoinflipManager;
 import org.legitzxdevelopment.coinflip.commands.CoinflipCommands;
+import org.legitzxdevelopment.coinflip.cooldown.CooldownManager;
 import org.legitzxdevelopment.coinflip.database.DatabaseApi;
 import org.legitzxdevelopment.coinflip.database.DatabaseConnection;
 import org.legitzxdevelopment.coinflip.events.CoinflipEvents;
@@ -26,6 +27,7 @@ public final class Coinflip extends JavaPlugin {
     // Managers
     CoinflipManager coinflipManager;
     CoinflipCommands commands;
+    CooldownManager cooldownManager;
 
     // Utils
     Utils utils;
@@ -87,6 +89,7 @@ public final class Coinflip extends JavaPlugin {
         utils = new Utils();
         coinflipConverter = new CoinflipConverter();
         commands = new CoinflipCommands();
+        cooldownManager = new CooldownManager();
     }
 
     // <-- VaultAPI -->
@@ -160,4 +163,6 @@ public final class Coinflip extends JavaPlugin {
     public CoinflipCommands getCoinflipCommands() {
         return commands;
     }
+
+    public CooldownManager getCooldownManager() { return cooldownManager; }
 }

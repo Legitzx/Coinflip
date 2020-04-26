@@ -55,6 +55,18 @@ public class CoinflipEvents implements Listener {
         try {
             if(plugin.getCoinflipManager().isPlayerInGUI(event.getWhoClicked().getUniqueId().toString())) {
                 if(event.getSlot() >= 0 && event.getSlot() <= 54) {
+                    // Cooldown stuff
+                    if(plugin.getCooldownManager().hasCooldown(player)) {
+                        if(plugin.getCooldownManager().getCooldownTime(player) > 0) {
+                            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "You still have " + plugin.getCooldownManager().getCooldownTime(player) + " seconds left until you can join a game.");
+                            return;
+                        }
+                        if(plugin.getCooldownManager().getCooldownTime(player) <= 0) {
+                            plugin.getCooldownManager().removeFromHashMap(player);
+                        }
+                    }
+                    plugin.getCooldownManager().addCooldown(player);
+
                     // Gets prize from item meta
                     String v = event.getClickedInventory().getItem(event.getSlot()).getItemMeta().getLore().get(0);
                     String[] args = v.split(" ");
@@ -76,7 +88,7 @@ public class CoinflipEvents implements Listener {
                     CoinflipGame check1 = plugin.getDatabaseApi().getCoinflipByUUID(player.getUniqueId().toString());
 
                     if(check1 != null) {
-                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "You already have a CF up! Do /cf cancel to cancel your current game.");
+                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "You already have a coinflip up! Do /cf cancel to cancel your current game.");
                         event.setCancelled(true);
                         return;
                     }
@@ -102,7 +114,7 @@ public class CoinflipEvents implements Listener {
                         check.setPlayer2(player.getUniqueId().toString());
                         plugin.getCoinflipCommands().updateToDatabase(check);
 
-                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Game has started");
+                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Coinflip wager has started!");
                         plugin.getCoinflipCommands().startGame(check);
 
                     } else { // Seems that someone has already taken this game - Deposit the betAmount back into the player and EXIT

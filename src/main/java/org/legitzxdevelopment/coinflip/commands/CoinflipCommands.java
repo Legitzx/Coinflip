@@ -23,7 +23,7 @@ public class CoinflipCommands implements CommandExecutor {
     // Plugin this class belongs to
     Coinflip plugin = Coinflip.getPlugin(Coinflip.class);
 
-    // TODO: ADD COOLDOWNS TO COMMANDS, ALSO ADD COOLDOWNS FOR CLICKINVENTORYEVENT
+    // TODO: ADD COOLDOWNS TO COMMANDS, ALSO ADD COOLDOWNS FOR CLICKINVENTORYEVENT - refer to simplestats
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -36,6 +36,18 @@ public class CoinflipCommands implements CommandExecutor {
                         if(args[0].equalsIgnoreCase("create")) {
                             if(args.length >= 2) {
                                 if(args[1].matches("[0-9]+")) {
+                                    // Cooldown stuff
+                                    if(plugin.getCooldownManager().hasCooldown(player)) {
+                                        if(plugin.getCooldownManager().getCooldownTime(player) > 0) {
+                                            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "You still have " + plugin.getCooldownManager().getCooldownTime(player) + " seconds left untill you can execute /cf create");
+                                            return true;
+                                        }
+                                        if(plugin.getCooldownManager().getCooldownTime(player) <= 0) {
+                                            plugin.getCooldownManager().removeFromHashMap(player);
+                                        }
+                                    }
+                                    plugin.getCooldownManager().addCooldown(player);
+
                                     if(Long.parseLong(args[1]) >= plugin.getConfig().getInt("coinflip.min") && Long.parseLong(args[1]) <= plugin.getConfig().getInt("coinflip.max")) {
                                         createGame(player, Long.parseLong(args[1]));
                                     } else {
@@ -43,10 +55,10 @@ public class CoinflipCommands implements CommandExecutor {
                                         player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Minimum bet amount is $" + df.format(plugin.getConfig().getInt("coinflip.min")) + " and max bet amount is $" + df.format(plugin.getConfig().getInt("coinflip.max")) + "!");
                                     }
                                 } else {
-                                    player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Wrong arguments! Do /cf help.");
+                                    player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Wrong arguments! Visit /cf for more help.");
                                 }
                             } else {
-                                player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Missing bet amount! Do /cf help");
+                                player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Missing bet amount! Visit /cf for more help.");
                             }
                         }
 
@@ -63,14 +75,14 @@ public class CoinflipCommands implements CommandExecutor {
                                         DecimalFormat df = new DecimalFormat("#,###");
                                         player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Successfully cancelled coinflip wager for $" + df.format(coinflipGame.getPrize() / 2));
                                     } else {
-                                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "There was a problem removing you CF!");
+                                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "There was a problem removing you coinflip!");
                                     }
                                     return true;
                                 } else {
-                                    player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Seems that you are already in an active game.");
+                                    player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Seems that you are already in an active game. Visit /cf for more help.");
                                 }
                             } else {
-                                player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "You do not have a CF up!");
+                                player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "You do not have a CF up! Visit /cf for more help.");
                             }
                         }
 
@@ -85,7 +97,7 @@ public class CoinflipCommands implements CommandExecutor {
                         }
 
                         if(args[0].equalsIgnoreCase("help")) {
-                            sendUsages(player);
+                            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.AQUA + "Visit /cf for help.");
                         }
                     }
                 } else {
@@ -501,12 +513,4 @@ public class CoinflipCommands implements CommandExecutor {
         plugin.getCoinflipManager().updateMainCfGUI(player, inventory);
         //player.openInventory(inventory);
     }
-
-    public void sendUsages(Player player) {
-
-    }
-
-
 }
-
-// https://www.spigotmc.org/threads/loading-inventory-with-player-head-crash-the-server.348970/
