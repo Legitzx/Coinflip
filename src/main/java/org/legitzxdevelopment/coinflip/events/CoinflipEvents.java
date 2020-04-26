@@ -31,9 +31,11 @@ public class CoinflipEvents implements Listener {
         }
 
         // Check if player is in the cf menu, if they are and if they exit we can remove them
-        if(plugin.getCoinflipManager().isPlayerInGUI(event.getPlayer().getUniqueId().toString())) {
-            plugin.getCoinflipManager().removePlayer(event.getPlayer().getUniqueId().toString());
-            plugin.getServer().broadcastMessage("CLOSE");
+        if(!plugin.getCoinflipManager().refreshing) {
+            if(plugin.getCoinflipManager().isPlayerInGUI(event.getPlayer().getUniqueId().toString())) {
+                plugin.getCoinflipManager().removePlayer(event.getPlayer().getUniqueId().toString());
+                plugin.getServer().broadcastMessage("CLOSE");
+            }
         }
     }
 

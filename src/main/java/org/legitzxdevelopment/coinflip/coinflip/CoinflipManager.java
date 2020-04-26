@@ -21,10 +21,14 @@ public class CoinflipManager {
     private HashMap<String, Boolean> coinflipGameList;
     private HashMap<String, Inventory> playersInCfGUI; // CF Inventory
 
+    public boolean refreshing; // WHILE THE COINFLIPS ARE REFRESHING, NOTHING CAN GET REMOVED -> ConcurrentModificationException FIX
+
     public CoinflipManager(Coinflip plugin) {
         this.plugin = plugin;
         coinflipGameList = new HashMap<>();
         playersInCfGUI = new HashMap<>();
+
+        refreshing = false;
     }
 
     public void addToList(String uuid, boolean isActive) {
@@ -92,6 +96,8 @@ public class CoinflipManager {
     }
 
     public void refreshInventory() {
+        plugin.getServer().broadcastMessage(playersInCfGUI.keySet().toString());
+        refreshing = true;
         for(String uuid : playersInCfGUI.keySet()) {
             Player player = Bukkit.getPlayer(UUID.fromString(uuid));
 
@@ -126,6 +132,7 @@ public class CoinflipManager {
         }
     }
 
+    // Fetches all active games
     public void updateMainCfGUI(Player player, Inventory inventory) {
         int count = 0;
         if(plugin.getCoinflipManager().getCoinflipGames().keySet() != null) {
@@ -156,6 +163,7 @@ public class CoinflipManager {
 
         if(!isPlayerInGUI(player.getUniqueId().toString()))
             plugin.getCoinflipManager().addPlayer(player.getUniqueId().toString(), inventory);
+        refreshing = false;
     }
 
     public ItemStack cacheHead(String player) {
