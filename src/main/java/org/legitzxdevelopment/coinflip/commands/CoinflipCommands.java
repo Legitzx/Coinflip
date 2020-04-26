@@ -194,6 +194,8 @@ public class CoinflipCommands implements CommandExecutor {
 
         Player player2 = Bukkit.getPlayer(UUID.fromString(game.getPlayer2()));
 
+        //plugin.getCoinflipManager().refreshInventory();
+
         new Countdown(3, plugin) {
             @Override
             public void count(int current) {
@@ -217,6 +219,8 @@ public class CoinflipCommands implements CommandExecutor {
 
     public void spinCoinflip(Player player1, Player player2, CoinflipGame game) {
         final boolean player1Wins;
+
+        plugin.getCoinflipManager().refreshInventory();
 
         if(getRandNum() == 1) {
             // player1 wins
@@ -333,11 +337,6 @@ public class CoinflipCommands implements CommandExecutor {
         }
     }
 
-    public int getRandNum() {
-        Random random = new Random();
-        return random.nextInt(2);
-    }
-
     public void rewardWinner(Player winner, Player loser, CoinflipGame game) {
         DecimalFormat df = new DecimalFormat("#,###");
         winner.getServer().broadcastMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + winner.getName() + ChatColor.YELLOW + " has defeated " + ChatColor.RED + loser.getName() + ChatColor.YELLOW + " in a $" + ChatColor.RED + df.format(game.getPrize()) + ChatColor.YELLOW + " coinflip!");
@@ -362,6 +361,11 @@ public class CoinflipCommands implements CommandExecutor {
         } else {
             winner.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "There was a problem depositing $" + game.getPrize() + " into your account!");
         }
+    }
+
+    public int getRandNum() {
+        Random random = new Random();
+        return random.nextInt(2);
     }
 
     public void closeInventory(Player player) {

@@ -8,6 +8,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.legitzxdevelopment.coinflip.Coinflip;
 import org.legitzxdevelopment.coinflip.coinflip.CoinflipGame;
@@ -59,6 +60,7 @@ public class CoinflipEvents implements Listener {
                     if(plugin.getCooldownManager().hasCooldown(player)) {
                         if(plugin.getCooldownManager().getCooldownTime(player) > 0) {
                             player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "You still have " + plugin.getCooldownManager().getCooldownTime(player) + " seconds left until you can join a game.");
+                            event.setCancelled(true);
                             return;
                         }
                         if(plugin.getCooldownManager().getCooldownTime(player) <= 0) {
@@ -182,9 +184,9 @@ public class CoinflipEvents implements Listener {
         }
     }
 
-//    @EventHandler
-//    public void movement(PlayerMoveEvent event) {
-//        event.getPlayer().getServer().broadcastMessage("CF: " + plugin.getCoinflipManager().getCoinflipGames());
-//        event.getPlayer().getServer().broadcastMessage("PLAYERS: " + plugin.getCoinflipManager().getPlayersInCfGUI());
-//    }
+    @EventHandler
+    public void movement(PlayerMoveEvent event) {
+        event.getPlayer().getServer().broadcastMessage("CF: " + plugin.getCoinflipManager().getCoinflipGames());
+        event.getPlayer().getServer().broadcastMessage("PLAYERS: " + plugin.getCoinflipManager().getPlayersInCfGUI());
+    }
 }
