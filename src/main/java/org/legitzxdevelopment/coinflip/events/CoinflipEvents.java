@@ -184,9 +184,9 @@ public class CoinflipEvents implements Listener {
         }
     }
 
-    @EventHandler
-    public void movement(PlayerMoveEvent event) {
-        event.getPlayer().getServer().broadcastMessage("CF: " + plugin.getCoinflipManager().getCoinflipGames());
-        event.getPlayer().getServer().broadcastMessage("PLAYERS: " + plugin.getCoinflipManager().getPlayersInCfGUI());
-    }
+//    @EventHandler
+//    public void movement(PlayerMoveEvent event) {
+//        event.getPlayer().getServer().broadcastMessage("CF: " + plugin.getCoinflipManager().getCoinflipGames());
+//        event.getPlayer().getServer().broadcastMessage("PLAYERS: " + plugin.getCoinflipManager().getPlayersInCfGUI());
+//    }
 }

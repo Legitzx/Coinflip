@@ -194,8 +194,6 @@ public class CoinflipCommands implements CommandExecutor {
 
         Player player2 = Bukkit.getPlayer(UUID.fromString(game.getPlayer2()));
 
-        //plugin.getCoinflipManager().refreshInventory();
-
         new Countdown(3, plugin) {
             @Override
             public void count(int current) {
@@ -204,6 +202,7 @@ public class CoinflipCommands implements CommandExecutor {
                 if(current == 3) {
                     countDownScreen3(player1);
                     countDownScreen3(player2);
+                    plugin.getCoinflipManager().refreshInventory();
                 } else if(current == 2) {
                     countDownScreen2(player1);
                     countDownScreen2(player2);
@@ -220,7 +219,7 @@ public class CoinflipCommands implements CommandExecutor {
     public void spinCoinflip(Player player1, Player player2, CoinflipGame game) {
         final boolean player1Wins;
 
-        plugin.getCoinflipManager().refreshInventory();
+        //plugin.getCoinflipManager().refreshInventory();
 
         if(getRandNum() == 1) {
             // player1 wins
