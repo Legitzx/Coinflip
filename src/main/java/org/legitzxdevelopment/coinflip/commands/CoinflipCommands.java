@@ -64,6 +64,17 @@ public class CoinflipCommands implements CommandExecutor {
 
 
                         if(args[0].equalsIgnoreCase("cancel")) {
+                            if(plugin.getCooldownManager().hasCooldown(player)) {
+                                if(plugin.getCooldownManager().getCooldownTime(player) > 0) {
+                                    player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "You still have " + plugin.getCooldownManager().getCooldownTime(player) + " seconds left untill you can execute /cf create");
+                                    return true;
+                                }
+                                if(plugin.getCooldownManager().getCooldownTime(player) <= 0) {
+                                    plugin.getCooldownManager().removeFromHashMap(player);
+                                }
+                            }
+                            plugin.getCooldownManager().addCooldown(player);
+
                             CoinflipGame coinflipGame = plugin.getDatabaseApi().getCoinflipByUUID(player.getUniqueId().toString());
 
                             if(coinflipGame != null) {
@@ -246,7 +257,7 @@ public class CoinflipCommands implements CommandExecutor {
 
 
 
-            new FastCountdown(40, plugin) {
+            new FastCountdown(55, plugin) {
                 @Override
                 public void count(int current) {
                     player1.playSound(player1.getLocation(), Sound.LEVEL_UP, 100, 2);
@@ -290,7 +301,7 @@ public class CoinflipCommands implements CommandExecutor {
                 }
             }.start();
         } catch (NullPointerException e) { // Player is offline
-            new FastCountdown(40, plugin) {
+            new FastCountdown(55, plugin) {
                 @Override
                 public void count(int current) {
                     if(current % 2 == 0) {
@@ -388,8 +399,10 @@ public class CoinflipCommands implements CommandExecutor {
             inventory.setItem(slot, itemStack);
         }
 
-        player1.openInventory(inventory);
-        player2.openInventory(inventory);
+        player1.getOpenInventory().getTopInventory().setContents(inventory.getContents());
+        player2.getOpenInventory().getTopInventory().setContents(inventory.getContents());
+        player1.updateInventory();
+        player2.updateInventory();
     }
 
 

@@ -10,6 +10,7 @@ import org.legitzxdevelopment.coinflip.coinflip.CoinflipGame;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class DatabaseApi extends DatabaseConnection {
     MongoCollection collection;

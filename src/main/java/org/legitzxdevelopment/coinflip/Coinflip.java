@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.legitzxdevelopment.coinflip.coinflip.CoinflipConverter;
 import org.legitzxdevelopment.coinflip.coinflip.CoinflipGame;
 import org.legitzxdevelopment.coinflip.coinflip.CoinflipManager;
@@ -20,17 +21,17 @@ import java.util.UUID;
 
 public final class Coinflip extends JavaPlugin {
     // Converters
-    CoinflipConverter coinflipConverter;
+    private CoinflipConverter coinflipConverter;
 
     // Managers
-    CoinflipManager coinflipManager;
-    CooldownManager cooldownManager;
+    private CoinflipManager coinflipManager;
+    private CooldownManager cooldownManager;
 
     // Commands
-    CoinflipCommands commands;
+    private CoinflipCommands commands;
 
     // Utils
-    Utils utils;
+    private Utils utils;
 
     // APIs
     private Economy econ = null;
@@ -81,7 +82,6 @@ public final class Coinflip extends JavaPlugin {
     }
 
     public void initInstances() {
-        //utils = new Utils(this);
         coinflipManager = new CoinflipManager(this);
         coinflipConverter = new CoinflipConverter();
         commands = new CoinflipCommands(this);

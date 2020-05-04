@@ -58,6 +58,7 @@ public class CoinflipEvents implements Listener {
         try {
             if(plugin.getCoinflipManager().isPlayerInGUI(event.getWhoClicked().getUniqueId().toString())) {
                 if(event.getSlot() >= 0 && event.getSlot() <= 54) {
+                    // Checks if slot is empty, if so no point of executing
                     if(event.getCurrentItem().getType().name().equals("AIR") || event.getCurrentItem().getType().name().equals("ENDER_CHEST") || event.getCurrentItem().getType().name().equals("STAINED_GLASS_PANE")) {
                         return;
                     }

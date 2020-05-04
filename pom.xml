@@ -88,11 +88,16 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- MONGODB -->
+        <!-- MONGODB SYNC/ASYNC-->
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>
             <version>3.12.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-async</artifactId>
+            <version>3.1.1</version>
         </dependency>
 
     </dependencies>
