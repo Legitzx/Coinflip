@@ -20,7 +20,11 @@ import java.util.UUID;
 
 public class CoinflipCommands implements CommandExecutor {
     // Plugin this class belongs to
-    Coinflip plugin = Coinflip.getPlugin(Coinflip.class);
+    private Coinflip plugin;
+
+    public CoinflipCommands(Coinflip plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

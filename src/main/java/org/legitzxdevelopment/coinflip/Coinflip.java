@@ -1,6 +1,5 @@
 package org.legitzxdevelopment.coinflip;
 
-import com.mongodb.client.MongoDatabase;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
@@ -13,7 +12,6 @@ import org.legitzxdevelopment.coinflip.coinflip.CoinflipManager;
 import org.legitzxdevelopment.coinflip.commands.CoinflipCommands;
 import org.legitzxdevelopment.coinflip.cooldown.CooldownManager;
 import org.legitzxdevelopment.coinflip.database.DatabaseApi;
-import org.legitzxdevelopment.coinflip.database.DatabaseConnection;
 import org.legitzxdevelopment.coinflip.events.CoinflipEvents;
 import org.legitzxdevelopment.coinflip.settings.Countdown;
 import org.legitzxdevelopment.coinflip.settings.Utils;
@@ -26,8 +24,10 @@ public final class Coinflip extends JavaPlugin {
 
     // Managers
     CoinflipManager coinflipManager;
-    CoinflipCommands commands;
     CooldownManager cooldownManager;
+
+    // Commands
+    CoinflipCommands commands;
 
     // Utils
     Utils utils;
@@ -36,15 +36,17 @@ public final class Coinflip extends JavaPlugin {
     private Economy econ = null;
 
     // Database
-    private MongoDatabase database;
     private DatabaseApi databaseApi;
 
     @Override
     public void onEnable() {
         // Plugin startup logic
 
-        // Initialize Classes
-        initInstances();
+        // Load Config
+        getConfig().options().copyDefaults();
+        saveDefaultConfig();
+
+        utils = new Utils(this);
 
         // Setup VaultAPI
         if(!setupEconomy()) {
@@ -53,21 +55,15 @@ public final class Coinflip extends JavaPlugin {
             return;
         }
 
-        // Load Config
-        getConfig().options().copyDefaults();
-        saveDefaultConfig();
-
-        // Connect to database
-        DatabaseConnection connection = new DatabaseConnection();
-        database = connection.getDatabase();
-        databaseApi = new DatabaseApi();
+        // Initialize Classes
+        initInstances();
 
         // Events
-        getServer().getPluginManager().registerEvents(new CoinflipEvents(), this);
+        getServer().getPluginManager().registerEvents(new CoinflipEvents(this), this);
 
         // Commands
-        this.getCommand("cf").setExecutor(new CoinflipCommands());
-        this.getCommand("coinflip").setExecutor(new CoinflipCommands());
+        this.getCommand("cf").setExecutor(new CoinflipCommands(this));
+        this.getCommand("coinflip").setExecutor(new CoinflipCommands(this));
 
         // Refund old coinflips
         refundCooldown();
@@ -85,11 +81,12 @@ public final class Coinflip extends JavaPlugin {
     }
 
     public void initInstances() {
+        //utils = new Utils(this);
         coinflipManager = new CoinflipManager(this);
-        utils = new Utils();
         coinflipConverter = new CoinflipConverter();
-        commands = new CoinflipCommands();
-        cooldownManager = new CooldownManager();
+        commands = new CoinflipCommands(this);
+        cooldownManager = new CooldownManager(this);
+        databaseApi = new DatabaseApi(this);
     }
 
     // <-- VaultAPI -->
@@ -148,10 +145,6 @@ public final class Coinflip extends JavaPlugin {
         return utils;
     }
 
-    public MongoDatabase getMongoDatabase() {
-        return database;
-    }
-
     public DatabaseApi getDatabaseApi() {
         return databaseApi;
     }
@@ -165,5 +158,9 @@ public final class Coinflip extends JavaPlugin {
     }
 
     public CooldownManager getCooldownManager() { return cooldownManager; }
+
+    public CoinflipConverter getCoinflipConverter() {
+        return coinflipConverter;
+    }
 }
 

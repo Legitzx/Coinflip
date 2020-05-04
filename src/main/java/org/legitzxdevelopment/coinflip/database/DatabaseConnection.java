@@ -10,9 +10,11 @@ import java.util.logging.Logger;
 
 public class DatabaseConnection {
     private MongoDatabase database;
-    Coinflip plugin = Coinflip.getPlugin(Coinflip.class);
+    Coinflip plugin;
 
-    public DatabaseConnection() {
+    public DatabaseConnection(Coinflip plugin) {
+        this.plugin = plugin;
+
         MongoClient mongoClient = MongoClients.create(
                 plugin.getConfig().getString("uri"));
         database = mongoClient.getDatabase(plugin.getConfig().getString("database"));

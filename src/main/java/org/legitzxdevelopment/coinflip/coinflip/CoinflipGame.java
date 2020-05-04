@@ -1,6 +1,5 @@
 package org.legitzxdevelopment.coinflip.coinflip;
 
-
 // POJO
 
 public class CoinflipGame {

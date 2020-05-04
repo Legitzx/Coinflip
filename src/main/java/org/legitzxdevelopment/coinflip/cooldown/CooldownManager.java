@@ -5,8 +5,14 @@ import org.legitzxdevelopment.coinflip.Coinflip;
 import java.util.HashMap;
 
 public class CooldownManager {
-    private HashMap<String, Long> cooldowns = new HashMap<>();
-    Coinflip plugin = Coinflip.getPlugin(Coinflip.class);
+    private HashMap<String, Long> cooldowns;
+    private Coinflip plugin;
+
+    public CooldownManager(Coinflip plugin) {
+        this.plugin = plugin;
+
+        cooldowns = new HashMap<>();
+    }
 
     /**
      * Description: Adds cooldown to specified player.

@@ -13,8 +13,11 @@ import org.legitzxdevelopment.coinflip.Coinflip;
 import org.legitzxdevelopment.coinflip.coinflip.CoinflipGame;
 
 public class CoinflipEvents implements Listener {
+    Coinflip plugin;
 
-    Coinflip plugin = Coinflip.getPlugin(Coinflip.class);
+    public CoinflipEvents(Coinflip plugin) {
+        this.plugin = plugin;
+    }
 
     // If player is in a CF game, it will make sure they cannot exit out of it.
     @EventHandler
@@ -55,6 +58,9 @@ public class CoinflipEvents implements Listener {
         try {
             if(plugin.getCoinflipManager().isPlayerInGUI(event.getWhoClicked().getUniqueId().toString())) {
                 if(event.getSlot() >= 0 && event.getSlot() <= 54) {
+                    if(event.getCurrentItem().getType().name().equals("AIR") || event.getCurrentItem().getType().name().equals("ENDER_CHEST") || event.getCurrentItem().getType().name().equals("STAINED_GLASS_PANE")) {
+                        return;
+                    }
                     // Cooldown stuff
                     if(plugin.getCooldownManager().hasCooldown(player)) {
                         if(plugin.getCooldownManager().getCooldownTime(player) > 0) {

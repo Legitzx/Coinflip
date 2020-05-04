@@ -30,7 +30,7 @@ public class CoinflipManager {
     private Coinflip plugin;
     private HashMap<String, Boolean> coinflipGameList;
     private ArrayList<String> playersInCfGUI; // CF Inventory
-    private Map<String, ItemStack> heads = new HashMap<>(); // Head Caching
+    private Map<String, ItemStack> heads; // Head Caching
 
     public boolean refreshing; // WHILE THE COINFLIPS ARE REFRESHING, NOTHING CAN GET REMOVED -> ConcurrentModificationException FIX
 
@@ -38,6 +38,7 @@ public class CoinflipManager {
         this.plugin = plugin;
         coinflipGameList = new HashMap<>();
         playersInCfGUI = new ArrayList<>();
+        heads = new HashMap<>();
 
         refreshing = false;
     }

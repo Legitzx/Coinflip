@@ -12,14 +12,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DatabaseApi extends DatabaseConnection {
-    // Plugin this class belongs to
-    Coinflip coinflip = Coinflip.getPlugin(Coinflip.class);
+    MongoCollection collection;
+    CoinflipConverter coinflipConverter;
 
-    // Gets main collection
-    MongoCollection collection = getDatabase().getCollection(plugin.getConfig().getString("collection"));
+    public DatabaseApi(Coinflip plugin) {
+        super(plugin);
 
-    // Converter for serializing/deserializing
-    CoinflipConverter coinflipConverter = new CoinflipConverter();
+        collection = getDatabase().getCollection(plugin.getConfig().getString("collection"));
+        coinflipConverter = plugin.getCoinflipConverter();
+    }
 
     /**
      * Description: Gets coinflip game by prize amount
