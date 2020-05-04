@@ -33,7 +33,7 @@ public final class Coinflip extends JavaPlugin {
     Utils utils;
 
     // APIs
-    private static Economy econ = null;
+    private Economy econ = null;
 
     // Database
     private MongoDatabase database;
@@ -166,3 +166,4 @@ public final class Coinflip extends JavaPlugin {
 
     public CooldownManager getCooldownManager() { return cooldownManager; }
 }
+

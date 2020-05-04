@@ -14,7 +14,6 @@ import org.legitzxdevelopment.coinflip.coinflip.CoinflipGame;
 import org.legitzxdevelopment.coinflip.settings.Countdown;
 import org.legitzxdevelopment.coinflip.settings.FastCountdown;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
@@ -22,8 +21,6 @@ import java.util.UUID;
 public class CoinflipCommands implements CommandExecutor {
     // Plugin this class belongs to
     Coinflip plugin = Coinflip.getPlugin(Coinflip.class);
-
-    // TODO: ADD COOLDOWNS TO COMMANDS, ALSO ADD COOLDOWNS FOR CLICKINVENTORYEVENT - refer to simplestats
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -51,8 +48,7 @@ public class CoinflipCommands implements CommandExecutor {
                                     if(Long.parseLong(args[1]) >= plugin.getConfig().getInt("coinflip.min") && Long.parseLong(args[1]) <= plugin.getConfig().getInt("coinflip.max")) {
                                         createGame(player, Long.parseLong(args[1]));
                                     } else {
-                                        DecimalFormat df = new DecimalFormat("#,###");
-                                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Minimum bet amount is $" + df.format(plugin.getConfig().getInt("coinflip.min")) + " and max bet amount is $" + df.format(plugin.getConfig().getInt("coinflip.max")) + "!");
+                                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Minimum bet amount is $" + plugin.getUtils().getDecimalFormat().format(plugin.getConfig().getInt("coinflip.min")) + " and max bet amount is $" + plugin.getUtils().getDecimalFormat().format(plugin.getConfig().getInt("coinflip.max")) + "!");
                                     }
                                 } else {
                                     player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "Wrong arguments! Visit /cf for more help.");
@@ -72,8 +68,7 @@ public class CoinflipCommands implements CommandExecutor {
 
                                     if(response.transactionSuccess()) {
                                         deleteFromDatabase(coinflipGame);
-                                        DecimalFormat df = new DecimalFormat("#,###");
-                                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Successfully cancelled coinflip wager for $" + df.format(coinflipGame.getPrize() / 2));
+                                        player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "Successfully cancelled coinflip wager for $" + plugin.getUtils().getDecimalFormat().format(coinflipGame.getPrize() / 2));
                                     } else {
                                         player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + "There was a problem removing you coinflip!");
                                     }
@@ -162,8 +157,7 @@ public class CoinflipCommands implements CommandExecutor {
             CoinflipGame coinflipGame = new CoinflipGame(player.getUniqueId().toString(), null, betAmount * 2, System.currentTimeMillis());
             insertIntoDatabase(coinflipGame);
 
-            DecimalFormat df = new DecimalFormat("#,###");
-            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "New coinflip proposal created for $" + df.format(betAmount));
+            player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GREEN + "New coinflip proposal created for $" + plugin.getUtils().getDecimalFormat().format(betAmount));
             player.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.GRAY + "Use " + ChatColor.UNDERLINE + "/cf cancel" + ChatColor.RESET + ChatColor.GRAY + " to cancel your proposal");
         }
     }
@@ -337,9 +331,12 @@ public class CoinflipCommands implements CommandExecutor {
     }
 
     public void rewardWinner(Player winner, Player loser, CoinflipGame game) {
-        DecimalFormat df = new DecimalFormat("#,###");
-        winner.getServer().broadcastMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + winner.getName() + ChatColor.YELLOW + " has defeated " + ChatColor.RED + loser.getName() + ChatColor.YELLOW + " in a $" + ChatColor.RED + df.format(game.getPrize()) + ChatColor.YELLOW + " coinflip!");
-
+        if(game.getPrize() <= plugin.getConfig().getLong("coinflip.announce")) {
+            winner.getServer().broadcastMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + winner.getName() + ChatColor.YELLOW + " has defeated " + ChatColor.RED + loser.getName() + ChatColor.YELLOW + " in a $" + ChatColor.RED + plugin.getUtils().getDecimalFormat().format(game.getPrize()) + ChatColor.YELLOW + " coinflip!");
+        } else {
+            winner.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + winner.getName() + ChatColor.YELLOW + " has defeated " + ChatColor.RED + loser.getName() + ChatColor.YELLOW + " in a $" + ChatColor.RED + plugin.getUtils().getDecimalFormat().format(game.getPrize()) + ChatColor.YELLOW + " coinflip!");
+            loser.sendMessage(plugin.getUtils().INGAME_PREFIX + ChatColor.RED + winner.getName() + ChatColor.YELLOW + " has defeated " + ChatColor.RED + loser.getName() + ChatColor.YELLOW + " in a $" + ChatColor.RED + plugin.getUtils().getDecimalFormat().format(game.getPrize()) + ChatColor.YELLOW + " coinflip!");
+        }
         // Waits 3 seconds, then deletes from database && closes game
         new Countdown(3, plugin) {
             @Override
@@ -479,7 +476,6 @@ public class CoinflipCommands implements CommandExecutor {
     public void openMainCfGUI(Player player) {
         Inventory inventory = Bukkit.createInventory(player, 54, ChatColor.DARK_AQUA + " " + ChatColor.BOLD + "GAMES AVAILABLE");
 
-        DecimalFormat df = new DecimalFormat("#,###");
 
         // <-- BASE CF GUI -->
         ItemStack glass = new ItemStack(Material.STAINED_GLASS_PANE, 1);
@@ -495,8 +491,8 @@ public class CoinflipCommands implements CommandExecutor {
         echestLore.add("");
         echestLore.add(ChatColor.WHITE + "Start a" + ChatColor.GREEN + " new wager " + ChatColor.WHITE + "of your own");
         echestLore.add(ChatColor.WHITE + "with" + ChatColor.GOLD + " /cf create <bet amount> " + ChatColor.WHITE + "where");
-        echestLore.add(ChatColor.WHITE + "the bet amount is between " + ChatColor.GREEN + "$" + df.format(plugin.getConfig().getInt("coinflip.min")));
-        echestLore.add(ChatColor.WHITE + "and " + ChatColor.GREEN + "$" + df.format(plugin.getConfig().getInt("coinflip.max")));
+        echestLore.add(ChatColor.WHITE + "the bet amount is between " + ChatColor.GREEN + "$" + plugin.getUtils().getDecimalFormat().format(plugin.getConfig().getInt("coinflip.min")));
+        echestLore.add(ChatColor.WHITE + "and " + ChatColor.GREEN + "$" + plugin.getUtils().getDecimalFormat().format(plugin.getConfig().getInt("coinflip.max")));
         echestLore.add("");
         echestLore.add(ChatColor.WHITE + "You can" + ChatColor.GREEN + " cancel an existing Coinflip");
         echestLore.add(ChatColor.WHITE + "proposal with" + ChatColor.GOLD + " /cf cancel");

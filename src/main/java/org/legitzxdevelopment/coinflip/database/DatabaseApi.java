@@ -1,7 +1,5 @@
 package org.legitzxdevelopment.coinflip.database;
 
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.lang.Nullable;
 import org.bson.Document;

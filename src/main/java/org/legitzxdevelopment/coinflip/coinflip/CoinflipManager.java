@@ -1,6 +1,5 @@
 package org.legitzxdevelopment.coinflip.coinflip;
 
-import com.google.common.base.Enums;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
@@ -9,7 +8,6 @@ import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.SkullType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -22,7 +20,6 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +29,7 @@ import java.util.logging.Level;
 public class CoinflipManager {
     private Coinflip plugin;
     private HashMap<String, Boolean> coinflipGameList;
-    private HashMap<String, Inventory> playersInCfGUI; // CF Inventory
+    private ArrayList<String> playersInCfGUI; // CF Inventory
     private Map<String, ItemStack> heads = new HashMap<>(); // Head Caching
 
     public boolean refreshing; // WHILE THE COINFLIPS ARE REFRESHING, NOTHING CAN GET REMOVED -> ConcurrentModificationException FIX
@@ -40,7 +37,7 @@ public class CoinflipManager {
     public CoinflipManager(Coinflip plugin) {
         this.plugin = plugin;
         coinflipGameList = new HashMap<>();
-        playersInCfGUI = new HashMap<>();
+        playersInCfGUI = new ArrayList<>();
 
         refreshing = false;
     }
@@ -84,8 +81,8 @@ public class CoinflipManager {
     }
 
     // CF Inventory stuff
-    public void addPlayer(String uuid, Inventory inventory) {
-        playersInCfGUI.put(uuid, inventory);
+    public void addPlayer(String uuid) {
+        playersInCfGUI.add(uuid);
     }
 
     public void removePlayer(String uuid) {
@@ -93,27 +90,21 @@ public class CoinflipManager {
     }
 
     public boolean isPlayerInGUI(String uuid) {
-        if(playersInCfGUI.containsKey(uuid)) {
+        if(playersInCfGUI.contains(uuid)) {
             return true;
         }
         return false;
     }
 
-    public HashMap<String, Inventory> getPlayersInCfGUI() {
+    public ArrayList<String> getPlayersInCfGUI() {
         return playersInCfGUI;
-    }
-
-    public Inventory getInventoryByUUID(String uuid) {
-        if(isPlayerInGUI(uuid)) {
-            return playersInCfGUI.get(uuid);
-        }
-        return null;
     }
 
     public void refreshInventory() {
         refreshing = true;
-        for(String uuid : playersInCfGUI.keySet()) {
-            Player player = Bukkit.getPlayer(UUID.fromString(uuid));
+        int size = playersInCfGUI.size();
+        for(int i = 0; i < size; i++) {
+            Player player = Bukkit.getPlayer(UUID.fromString(playersInCfGUI.get(i)));
 
             Inventory inventory = Bukkit.createInventory(player, 54, ChatColor.DARK_AQUA + " " + ChatColor.BOLD + "GAMES AVAILABLE");
 
@@ -153,7 +144,6 @@ public class CoinflipManager {
             for(String uuid : plugin.getCoinflipManager().getCoinflipGames().keySet()) {
                 if(!plugin.getCoinflipManager().isActive(uuid)) {
                     // Format numbers properly
-                    DecimalFormat df = new DecimalFormat("#,###");
 
                     String playerName = Bukkit.getPlayer(UUID.fromString(uuid)).getName();
                     CoinflipGame game = plugin.getDatabaseApi().getCoinflipByUUID(uuid);
@@ -162,7 +152,7 @@ public class CoinflipManager {
                     ItemMeta meta = head.getItemMeta();
                     meta.setDisplayName(ChatColor.GOLD + "" + ChatColor.BOLD + playerName + "'s Game");
                     ArrayList<String> lore = new ArrayList<>();
-                    lore.add(ChatColor.YELLOW + "" + ChatColor.BOLD + "Bet: $" + ChatColor.WHITE + df.format(game.getPrize() / 2));
+                    lore.add(ChatColor.YELLOW + "" + ChatColor.BOLD + "Bet: $" + ChatColor.WHITE + plugin.getUtils().getDecimalFormat().format(game.getPrize() / 2));
                     lore.add(ChatColor.GRAY + "\"Click to play against " + playerName + ".\"");
                     meta.setLore(lore);
                     head.setItemMeta(meta);
@@ -176,7 +166,7 @@ public class CoinflipManager {
         player.openInventory(inventory);
 
         if(!isPlayerInGUI(player.getUniqueId().toString()))
-            plugin.getCoinflipManager().addPlayer(player.getUniqueId().toString(), inventory);
+            plugin.getCoinflipManager().addPlayer(player.getUniqueId().toString());
         refreshing = false;
     }
 

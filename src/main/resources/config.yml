@@ -1,14 +1,22 @@
 # Coinflip Config
 
-# MongoDB Connection Creds.
+# **THIS PLUGIN WILL NOT WORK WITHOUT THE FOLLOWING MONGODB CREDENTIALS BEING FILLED OUT**
+
+# MongoDB Connection Creds. Ref(Shows you how to setup MongoDB URI/Database/Collection): https://www.youtube.com/watch?v=L5ORfm4i350&list=PLdnyVeMcpY7_Q3ms_ykCBgXOeCFGDleS2
 uri: "mongodb+srv://hex:4x2GBPhA0p7KwwZa@legitzxdevelopment-fbwir.mongodb.net/odysseymc?retryWrites=true&w=majority"
 database: "odysseymc"
 collection: "coinflip"
 
 # Server name
 server.name: "OdysseyMC"
-cooldown: 10
+
+# Cooldown between /cf create
+cooldown: 10 # Seconds
 
 # Bet Limits
 coinflip.min: 10000
 coinflip.max: 1000000000
+
+# Announcement Limit(At his value and up, coinflip announcements will be made globally) - If you would like to
+# disable such broadcasts, simply put the limit above the max.
+coinflip.announce: 100000
