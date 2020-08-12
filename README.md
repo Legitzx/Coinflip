@@ -1,0 +1,1 @@
+## Coinflip plugin for Spigot
